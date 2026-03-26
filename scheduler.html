@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Tracker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #171717;
+      --border: #262626;
+      --accent: #d4ff00;
+      --accent2: #ff6b35;
+      --text: #e8e8e8;
+      --muted: #666;
+      --success: #4ade80;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+
+    /* LAYOUT */
+    #app {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    #sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    #sidebar h1 {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 12px;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-btn:hover {
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .nav-btn.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(212, 255, 0, 0.05);
+    }
+
+    .sidebar-section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 16px;
+      margin-bottom: 4px;
+      padding: 0 12px;
+    }
+
+    /* MAIN */
+    #main {
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    /* DATE NAV */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .date-nav button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 14px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+
+    .date-nav button:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    .date-nav .current-date {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .date-nav .current-date:hover {
+      color: var(--accent);
+    }
+
+    .date-nav .today-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      background: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+      letter-spacing: 1px;
+    }
+
+    /* SECTIONS */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    /* TASK ITEMS */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      background: var(--surface);
+      transition: border-color 0.15s;
+    }
+
+    .task-item:hover {
+      border-color: #333;
+    }
+
+    .task-item.done {
+      opacity: 0.45;
+    }
+
+    .task-item.done .task-text {
+      text-decoration: line-through;
+    }
+
+    .task-item.failed {
+      border-color: #3d0000;
+      background: #150000;
+    }
+
+    .task-item.failed .task-text {
+      text-decoration: line-through;
+      color: #ff3b3b;
+      opacity: 0.7;
+    }
+
+    .task-time-overdue {
+      color: #ff3b3b !important;
+    }
+
+    .task-check {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.1s;
+    }
+
+    .task-check:hover {
+      border-color: var(--accent);
+    }
+
+    .task-check.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .task-check.checked::after {
+      content: '✓';
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .task-check.failed {
+      background: #3d0000;
+      border-color: #ff3b3b;
+      cursor: not-allowed;
+    }
+
+    .task-check.failed::after {
+      content: '✗';
+      color: #ff3b3b;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .task-check.locked {
+      cursor: not-allowed;
+    }
+
+    .task-check.locked:hover {
+      border-color: var(--border);
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .task-time {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #999;
+    }
+
+    .task-delete {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 0;
+      transition: opacity 0.1s;
+      line-height: 1;
+    }
+
+    .task-item:hover .task-delete {
+      opacity: 1;
+    }
+
+    .task-delete:hover {
+      color: var(--accent2);
+    }
+
+    /* PROGRESS BAR */
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 32px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    .progress-fill-fail {
+      height: 100%;
+      background: #cc2200;
+      transition: width 0.3s ease;
+    }
+
+    .progress-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .progress-label .done-lbl {
+      color: var(--accent);
+    }
+
+    .progress-label .fail-lbl {
+      color: #cc2200;
+    }
+
+    /* ADD FORM */
+    .add-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .add-form input,
+    .add-form select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .add-form input:focus,
+    .add-form select:focus {
+      border-color: var(--accent);
+    }
+
+    .add-form input[type="text"] {
+      flex: 1;
+    }
+
+    .add-form input[type="time"],
+    .add-form input[type="date"] {
+      width: 130px;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      transition: opacity 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      opacity: 0.85;
+    }
+
+    .btn.secondary {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn.secondary:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .empty-state {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      padding: 16px 0;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+    }
+
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+    }
+
+    .stat-val {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* HEATMAP */
+    .heatmap-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 32px;
+      overflow-x: auto;
+    }
+
+    .heatmap-grid {
+      display: flex;
+      gap: 3px;
+    }
+
+    .heatmap-week {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .heatmap-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      background: var(--border);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s;
+    }
+
+    .heatmap-cell:hover {
+      transform: scale(1.3);
+      z-index: 10;
+    }
+
+    .heatmap-cell[data-score="0"] {
+      background: var(--border);
+    }
+
+    .heatmap-cell[data-score="fail3"] {
+      background: #3d0000;
+    }
+
+    .heatmap-cell[data-score="fail2"] {
+      background: #5c0000;
+    }
+
+    .heatmap-cell[data-score="fail1"] {
+      background: #8b0000;
+    }
+
+    .heatmap-cell[data-score="1"] {
+      background: #2a3d00;
+    }
+
+    .heatmap-cell[data-score="2"] {
+      background: #4a6d00;
+    }
+
+    .heatmap-cell[data-score="3"] {
+      background: #7aab00;
+    }
+
+    .heatmap-cell[data-score="4"] {
+      background: var(--accent);
+    }
+
+    .heatmap-cell.today {
+      outline: 1px solid var(--accent);
+    }
+
+    .heatmap-tooltip {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+    }
+
+    .heatmap-cell:hover .heatmap-tooltip {
+      display: block;
+    }
+
+    /* WEEK CHART */
+    .week-chart {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    .week-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 80px;
+    }
+
+    .week-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .week-bar {
+      width: 100%;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      transition: height 0.3s ease;
+      opacity: 0.8;
+    }
+
+    .week-bar.empty {
+      background: var(--border);
+    }
+
+    .week-bar.bad {
+      background: #cc2200;
+    }
+
+    .week-bar-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .week-bar-pct {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+    }
+
+    /* MANAGE SCHEDULE */
+    .schedule-edit-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      background: var(--surface);
+    }
+
+    .schedule-edit-item span {
+      flex: 1;
+      font-size: 13px;
+    }
+
+    .schedule-edit-item .task-time {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      width: 360px;
+      max-width: 90vw;
+    }
+
+    .modal h3 {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6);
+      cursor: pointer;
+    }
+
+    .streak-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <h1>TRACKER</h1>
+      <button class="nav-btn active" onclick="showPage('today')">Today</button>
+      <button class="nav-btn" onclick="showPage('schedule')">Manage Schedule</button>
+      <div class="sidebar-section-label">Analysis</div>
+      <button class="nav-btn" onclick="showPage('analysis')">Dashboard</button>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+
+      <!-- TODAY PAGE -->
+      <div id="page-today" class="page active">
+        <div class="page-title">DAILY VIEW</div>
+
+        <div class="date-nav">
+          <button onclick="changeDay(-1)">‹</button>
+          <span class="current-date" id="displayDate" onclick="openDatePicker()">—</span>
+          <button onclick="changeDay(1)">›</button>
+          <button class="today-btn" onclick="goToday()">TODAY</button>
+          <span class="streak-badge" id="streakBadge">🔥 0</span>
+        </div>
+
+        <div>
+          <div class="progress-label">
+            <span id="progressLabel" class="done-lbl">0 / 0 done</span>
+            <span id="failLabel" class="fail-lbl"></span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            <div class="progress-fill-fail" id="progressFail" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- DAILY SCHEDULE -->
+        <div class="section">
+          <div class="section-label">Daily Schedule</div>
+          <div id="scheduleItems"></div>
+          <div class="empty-state" id="scheduleEmpty" style="display:none">No schedule items. Add from Manage Schedule.
+          </div>
+        </div>
+
+        <!-- EXTRA TASKS -->
+        <div class="section">
+          <div class="section-label">Extra Tasks</div>
+          <div id="extraItems"></div>
+          <div class="empty-state" id="extraEmpty" style="display:none">No extra tasks for this day.</div>
+          <div class="add-form" style="margin-top:16px">
+            <input type="text" id="extraTaskInput" placeholder="Add extra task..." />
+            <input type="date" id="extraTaskDate" />
+            <input type="time" id="extraTaskTime" />
+            <button class="btn" onclick="addExtraTask()">ADD</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE SCHEDULE PAGE -->
+      <div id="page-schedule" class="page">
+        <div class="page-title">MANAGE DAILY SCHEDULE</div>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:24px">These items repeat every day.</p>
+
+        <div id="scheduleEditList"></div>
+        <div class="empty-state" id="scheduleEditEmpty" style="display:none">No schedule items yet.</div>
+
+        <div class="add-form" style="margin-top:24px">
+          <input type="text" id="newScheduleTask" placeholder="Task name..." />
+          <input type="time" id="newScheduleTime" />
+          <button class="btn" onclick="addScheduleItem()">ADD</button>
+        </div>
+      </div>
+
+      <!-- ANALYSIS PAGE -->
+      <div id="page-analysis" class="page">
+        <div class="page-title">ANALYSIS</div>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="section-label">Last 7 Days</div>
+        <div class="week-chart">
+          <div class="week-bars" id="weekBars"></div>
+        </div>
+
+        <div class="section-label">Activity Heatmap (Last 12 Weeks)</div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div
+            style="display:flex;gap:12px;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--muted);align-items:center;flex-wrap:wrap">
+            <span>Less</span>
+            <span style="display:flex;gap:3px;align-items:center">
+              <span style="width:12px;height:12px;border-radius:2px;background:#3d0000;display:inline-block"></span>
+              <span style="width:12px;height:12px;border-radius:2px;background:#8b0000;display:inline-block"></span>
+              <span
+                style="width:12px;height:12px;border-radius:2px;background:var(--border);display:inline-block"></span>
+              <span style="width:12px;height:12px;border-radius:2px;background:#4a6d00;display:inline-block"></span>
+              <span style="width:12px;height:12px;border-radius:2px;background:#7aab00;display:inline-block"></span>
+              <span
+                style="width:12px;height:12px;border-radius:2px;background:var(--accent);display:inline-block"></span>
+            </span>
+            <span>More</span>
+            <span style="margin-left:8px;color:#cc2200">■ Failed</span>
+            <span style="color:var(--accent)">■ Succeeded</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Date picker modal -->
+  <div class="modal-overlay" id="dateModal">
+    <div class="modal">
+      <h3>Jump to Date</h3>
+      <div style="display:flex; gap:8px">
+        <input type="date" id="datePickerInput"
+          style="flex:1; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:14px; padding:8px 12px; border-radius:3px; outline:none;" />
+        <button class="btn" onclick="jumpToDate()">GO</button>
+        <button class="btn secondary" onclick="closeDatePicker()">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── STATE ────────────────────────────────────────────────────────
+    let state = {
+      schedule: [],       // [{id, text, time}]
+      extraTasks: {},     // {dateStr: [{id, text, time}]}
+      completions: {},    // {dateStr: {taskId: bool}}
+    };
+    let tickPeriod = 10 //mins;
+
+    const KEY = 'tracker_v1';
+
+    function load() {
+      const raw = localStorage.getItem(KEY);
+      if (raw) state = JSON.parse(raw);
+    }
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+    load();
+
+    // ─── DATE ─────────────────────────────────────────────────────────
+    let currentDate = new Date();
+    // currentDate.setHours(0,0,0,0);
+    console.log(currentDate);
+
+    function dateStr(d) {
+      return d.toISOString().split('T')[0];
+    }
+    function todayStr() { return dateStr(new Date()); }
+    function formatDisplay(d) {
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function changeDay(n) {
+      currentDate.setDate(currentDate.getDate() + n);
+      renderToday();
+    }
+    function goToday() {
+      currentDate = new Date();
+      // currentDate.setHours(0,0,0,0);
+      renderToday();
+    }
+    function openDatePicker() {
+      document.getElementById('datePickerInput').value = dateStr(currentDate);
+      document.getElementById('dateModal').classList.add('open');
+    }
+    function closeDatePicker() { document.getElementById('dateModal').classList.remove('open'); }
+    function jumpToDate() {
+      const v = document.getElementById('datePickerInput').value;
+      if (v) { currentDate = new Date(v + 'T00:00:00'); renderToday(); }
+      closeDatePicker();
+    }
+
+    // ─── RENDER TODAY ──────────────────────────────────────────────────
+    function isTaskExpired(task, ds) {
+      // Only applies to schedule tasks with a time set
+      if (!task.time) return false;
+      const today = todayStr();
+
+      console.log("today: " + today + " " + ds);
+
+      if (ds < today) return true; // past day — all expired
+      if (ds > today) return false; // future day — none expired
+      // today: check current time
+      const now = new Date();
+      let [h, m] = task.time.split(':').map(Number);
+
+      //allot 10 mins to tick it
+      m += tickPeriod;
+
+      const taskTime = new Date(); taskTime.setHours(h, m, 0, 0);
+      console.log("tasktime: " + taskTime + " " + task.time);
+      return now >= taskTime;
+    }
+
+    function renderToday() {
+      const ds = dateStr(currentDate);
+      console.log("ds: " + ds)
+      document.getElementById('displayDate').textContent = formatDisplay(currentDate);
+      document.getElementById('extraTaskDate').value = ds;
+
+      const comps = state.completions[ds] || {};
+      const schedItems = state.schedule;
+      const extras = state.extraTasks[ds] || [];
+
+      // Auto-fail expired uncompleted schedule tasks
+      let changed = false;
+      schedItems.forEach(t => {
+        if (isTaskExpired(t, ds) && comps[t.id] === undefined) {
+          if (!state.completions[ds]) state.completions[ds] = {};
+          state.completions[ds][t.id] = 'failed';
+          changed = true;
+        }
+      });
+      if (changed) save();
+      const comps2 = state.completions[ds] || {};
+
+      // Progress — only count success as done, failed = not done
+      const totalTasks = schedItems.length + extras.length;
+      const doneTasks = [...schedItems, ...extras].filter(t => comps2[t.id] === true).length;
+      const failedTasks = schedItems.filter(t => comps2[t.id] === 'failed').length;
+      document.getElementById('progressLabel').textContent = `${doneTasks} / ${totalTasks} done`;
+      document.getElementById('failLabel').textContent = failedTasks ? `${failedTasks} missed` : '';
+      const pct = totalTasks ? Math.round(doneTasks / totalTasks * 100) : 0;
+      const failPct = totalTasks ? Math.round(failedTasks / totalTasks * 100) : 0;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressFail').style.width = failPct + '%';
+
+      // Schedule items
+      const si = document.getElementById('scheduleItems');
+      const se = document.getElementById('scheduleEmpty');
+      si.innerHTML = '';
+      if (schedItems.length === 0) { se.style.display = 'block'; } else {
+        se.style.display = 'none';
+        const sorted = [...schedItems].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        sorted.forEach(t => {
+          const expired = isTaskExpired(t, ds);
+          const status = comps2[t.id]; // true | 'failed' | undefined
+          si.appendChild(makeScheduleTaskEl(t, status, expired, (done) => {
+            setCompletion(ds, t.id, done);
+          }));
+        });
+      }
+
+      // Extra tasks
+      const ei = document.getElementById('extraItems');
+      const ee = document.getElementById('extraEmpty');
+      ei.innerHTML = '';
+      if (extras.length === 0) { ee.style.display = 'block'; } else {
+        ee.style.display = 'none';
+        const sorted = [...extras].sort((a, b) => a.time.localeCompare(b.time));
+        sorted.forEach(t => ei.appendChild(makeTaskEl(t, comps2[t.id] === true, (done) => {
+          setCompletion(ds, t.id, done);
+        }, () => deleteExtraTask(ds, t.id))));
+      }
+
+      renderStreak();
+    }
+
+    // Schedule tasks: time-aware, fail-lockable
+    function makeScheduleTaskEl(task, status, expired, onToggle) {
+      const isFailed = status === 'failed';
+      const isDone = status === true;
+
+      const el = document.createElement('div');
+      el.className = 'task-item' + (isDone ? ' done' : '') + (isFailed ? ' failed' : '');
+
+      const check = document.createElement('div');
+      if (isFailed) {
+        check.className = 'task-check failed';
+        // locked — no toggle
+        // } else if (isDone && expired) {
+        //   // done and time passed — lock (prevent unticking after deadline)
+        //   check.className = 'task-check checked locked';
+      } else {
+        check.className = 'task-check' + (isDone ? ' checked' : '');
+        check.onclick = () => {
+
+          if (check.classList == "task-check checked") {
+            let areYouSure = confirm("Are you sure you want to toggle this?");
+            
+            if (areYouSure) onToggle(!isDone);
+            return;
+          }
+
+          onToggle(!isDone);
+        };
+      }
+
+      const text = document.createElement('span');
+      text.className = 'task-text';
+      text.textContent = task.text;
+
+      const time = document.createElement('span');
+      time.className = 'task-time' + (expired && !isDone ? ' task-time-overdue' : '');
+      time.textContent = task.time || '';
+
+      el.appendChild(check);
+      el.appendChild(text);
+      el.appendChild(time);
+      return el;
+    }
+
+    function makeTaskEl(task, done, onToggle, onDelete) {
+      const el = document.createElement('div');
+      el.className = 'task-item' + (done ? ' done' : '');
+
+      const check = document.createElement('div');
+      check.className = 'task-check' + (done ? ' checked' : '');
+      check.onclick = () => { onToggle(!check.classList.contains('checked')); };
+
+      const text = document.createElement('span');
+      text.className = 'task-text';
+      text.textContent = task.text;
+
+      const time = document.createElement('span');
+      time.className = 'task-time';
+      time.textContent = task.time || '';
+
+      el.appendChild(check);
+      el.appendChild(text);
+      el.appendChild(time);
+
+      if (onDelete) {
+        const del = document.createElement('button');
+        del.className = 'task-delete';
+        del.textContent = '×';
+        del.onclick = onDelete;
+        el.appendChild(del);
+      }
+      return el;
+    }
+
+    function setCompletion(ds, id, val) {
+      if (!state.completions[ds]) state.completions[ds] = {};
+      // val: true = success, false = remove/neutral (only for non-expired)
+      if (val === false) {
+        delete state.completions[ds][id];
+      } else {
+        state.completions[ds][id] = val; // true or 'failed'
+      }
+      save();
+      renderToday();
+      if (document.getElementById('page-analysis').classList.contains('active')) renderAnalysis();
+    }
+
+    // ─── EXTRA TASKS ──────────────────────────────────────────────────
+    function addExtraTask() {
+      const text = document.getElementById('extraTaskInput').value.trim();
+      const date = document.getElementById('extraTaskDate').value;
+      const time = document.getElementById('extraTaskTime').value;
+      if (!text || !date) return;
+      if (!state.extraTasks[date]) state.extraTasks[date] = [];
+      state.extraTasks[date].push({ id: uid(), text, time: time || '' });
+      document.getElementById('extraTaskInput').value = '';
+      save();
+      renderToday();
+    }
+    function deleteExtraTask(ds, id) {
+      state.extraTasks[ds] = (state.extraTasks[ds] || []).filter(t => t.id !== id);
+      if (state.completions[ds]) delete state.completions[ds][id];
+      save();
+      renderToday();
+    }
+
+    // ─── MANAGE SCHEDULE ──────────────────────────────────────────────
+    function renderScheduleEdit() {
+      const list = document.getElementById('scheduleEditList');
+      const empty = document.getElementById('scheduleEditEmpty');
+      list.innerHTML = '';
+      if (state.schedule.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      const sorted = [...state.schedule].sort((a, b) => a.time.localeCompare(b.time));
+      sorted.forEach(t => {
+        const el = document.createElement('div');
+        el.className = 'schedule-edit-item';
+        el.innerHTML = `<span>${t.text}</span><span class="task-time">${t.time || ''}</span>`;
+        const del = document.createElement('button');
+        del.className = 'task-delete';
+        del.style.opacity = '1';
+        del.textContent = '×';
+        del.onclick = () => {
+          state.schedule = state.schedule.filter(s => s.id !== t.id);
+          save(); renderScheduleEdit();
+        };
+        el.appendChild(del);
+        list.appendChild(el);
+      });
+    }
+    function addScheduleItem() {
+      const text = document.getElementById('newScheduleTask').value.trim();
+      const time = document.getElementById('newScheduleTime').value;
+      if (!text) return;
+      state.schedule.push({ id: uid(), text, time: time || '' });
+      document.getElementById('newScheduleTask').value = '';
+      document.getElementById('newScheduleTime').value = '';
+      save(); renderScheduleEdit();
+    }
+
+    // ─── ANALYSIS ─────────────────────────────────────────────────────
+    function getDayScore(ds) {
+      const comps = state.completions[ds] || {};
+      const extras = state.extraTasks[ds] || [];
+      const total = state.schedule.length + extras.length;
+      if (total === 0) return null;
+      const done = [...state.schedule, ...extras].filter(t => comps[t.id]).length;
+      return done / total;
+    }
+
+    function renderAnalysis() {
+      // Stats
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      let totalDays = 0, perfectDays = 0, totalScore = 0;
+      const allDates = new Set([
+        ...Object.keys(state.completions),
+        ...Object.keys(state.extraTasks)
+      ]);
+      allDates.forEach(ds => {
+        const score = getDayScore(ds);
+        if (score !== null) {
+          totalDays++;
+          totalScore += score;
+          if (score === 1) perfectDays++;
+        }
+      });
+      const avgProductivity = totalDays ? Math.round(totalScore / totalDays * 100) : 0;
+      const streak = calcStreak();
+
+      document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${streak}</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat-card"><div class="stat-val">${avgProductivity}%</div><div class="stat-label">Avg Productivity</div></div>
+    <div class="stat-card"><div class="stat-val">${perfectDays}</div><div class="stat-label">Perfect Days</div></div>
+    <div class="stat-card"><div class="stat-val">${totalDays}</div><div class="stat-label">Active Days</div></div>
+  `;
+
+      // Week chart
+      const wb = document.getElementById('weekBars');
+      wb.innerHTML = '';
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const ds = dateStr(d);
+        const score = getDayScore(ds);
+        const pct = score !== null ? Math.round(score * 100) : 0;
+        const barClass = score === null ? 'empty' : score < 0.5 ? 'bad' : '';
+        const wrap = document.createElement('div');
+        wrap.className = 'week-bar-wrap';
+        wrap.innerHTML = `
+      <div class="week-bar ${barClass}" style="height:${Math.max(score !== null ? pct : 0, 2)}%"></div>
+      <div class="week-bar-label">${days[d.getDay()]}</div>
+      <div class="week-bar-pct" style="${score !== null && score < 0.5 ? 'color:#cc2200' : ''}">${score !== null ? pct + '%' : ''}</div>
+    `;
+        wb.appendChild(wrap);
+      }
+
+      // Heatmap — 12 weeks
+      const grid = document.getElementById('heatmapGrid');
+      grid.innerHTML = '';
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - startDate.getDay() - (11 * 7));
+      for (let w = 0; w < 12; w++) {
+        const week = document.createElement('div');
+        week.className = 'heatmap-week';
+        for (let d = 0; d < 7; d++) {
+          const cell = document.createElement('div');
+          cell.className = 'heatmap-cell';
+          const cellDate = new Date(startDate);
+          cellDate.setDate(startDate.getDate() + w * 7 + d);
+          const ds = dateStr(cellDate);
+          const score = getDayScore(ds);
+          let scoreLevel = '0';
+          if (score !== null) {
+            if (score >= 1) scoreLevel = '4';
+            else if (score >= 0.75) scoreLevel = '3';
+            else if (score >= 0.5) scoreLevel = '2';
+            else if (score >= 0.25) scoreLevel = '1';
+            else if (score > 0) scoreLevel = 'fail1';
+            else scoreLevel = 'fail3'; // 0% = total fail
+          }
+          cell.setAttribute('data-score', scoreLevel);
+          if (ds === todayStr()) cell.classList.add('today');
+          cell.innerHTML = `<div class="heatmap-tooltip">${ds}: ${score !== null ? Math.round(score * 100) + '%' : 'no data'}</div>`;
+          week.appendChild(cell);
+        }
+        grid.appendChild(week);
+      }
+    }
+
+    function calcStreak() {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      let streak = 0;
+      let d = new Date(today);
+      while (true) {
+        const ds = dateStr(d);
+        const score = getDayScore(ds);
+        if (score === null || score === 0) break;
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+      return streak;
+    }
+
+    function renderStreak() {
+      document.getElementById('streakBadge').textContent = `🔥 ${calcStreak()}`;
+    }
+
+    // ─── NAVIGATION ───────────────────────────────────────────────────
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      event.target.classList.add('active');
+      if (name === 'today') renderToday();
+      if (name === 'schedule') renderScheduleEdit();
+      if (name === 'analysis') renderAnalysis();
+    }
+
+    // ─── UTILS ────────────────────────────────────────────────────────
+    function uid() { return Math.random().toString(36).slice(2, 10); }
+
+    // ─── INIT ─────────────────────────────────────────────────────────
+    renderToday();
+  </script>
+</body>
+
+</html>
