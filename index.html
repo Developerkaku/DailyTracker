@@ -972,7 +972,7 @@
 
           if (check.classList == "task-check checked") {
             let areYouSure = confirm("Are you sure you want to toggle this?");
-            
+
             if (areYouSure) onToggle(!isDone);
             return;
           }
@@ -1093,23 +1093,30 @@
 
     // ─── ANALYSIS ─────────────────────────────────────────────────────
     function getDayScore(ds) {
+      // console.log(today)
       const comps = state.completions[ds] || {};
       const extras = state.extraTasks[ds] || [];
       const total = state.schedule.length + extras.length;
       if (total === 0) return null;
-      const done = [...state.schedule, ...extras].filter(t => comps[t.id]).length;
+      const done = [...state.schedule, ...extras]
+        .filter(t => comps[t.id] === true).length;
+      // console.log(ds, done);
       return done / total;
     }
 
     function renderAnalysis() {
       // Stats
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      // today.setHours(0, 0, 0, 0);
       let totalDays = 0, perfectDays = 0, totalScore = 0;
       const allDates = new Set([
         ...Object.keys(state.completions),
         ...Object.keys(state.extraTasks)
       ]);
       allDates.forEach(ds => {
+
+        if (todayStr() < ds) return
+
         const score = getDayScore(ds);
         if (score !== null) {
           totalDays++;
@@ -1150,8 +1157,10 @@
       // Heatmap — 12 weeks
       const grid = document.getElementById('heatmapGrid');
       grid.innerHTML = '';
+
       const startDate = new Date(today);
       startDate.setDate(startDate.getDate() - startDate.getDay() - (11 * 7));
+
       for (let w = 0; w < 12; w++) {
         const week = document.createElement('div');
         week.className = 'heatmap-week';
@@ -1178,12 +1187,15 @@
         }
         grid.appendChild(week);
       }
+      grid.appendChild(document.createElement(("div")));
     }
 
+
     function calcStreak() {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      // const today = new Date(); 
+      // today.setHours(0, 0, 0, 0);
       let streak = 0;
-      let d = new Date(today);
+      let d = new Date();
       while (true) {
         const ds = dateStr(d);
         const score = getDayScore(ds);
