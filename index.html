@@ -835,7 +835,6 @@
     // ─── DATE ─────────────────────────────────────────────────────────
     let currentDate = new Date();
     // currentDate.setHours(0,0,0,0);
-    console.log(currentDate);
 
     function dateStr(d) {
       const year = d.getFullYear();
@@ -874,7 +873,6 @@
       if (!task.time) return false;
       const today = todayStr();
 
-      console.log("today: " + today + " " + ds);
 
       if (ds < today) return true; // past day — all expired
       if (ds > today) return false; // future day — none expired
@@ -886,13 +884,11 @@
       m += tickPeriod;
 
       const taskTime = new Date(); taskTime.setHours(h, m, 0, 0);
-      console.log("tasktime: " + taskTime + " " + task.time);
       return now >= taskTime;
     }
 
     function renderToday() {
       const ds = dateStr(currentDate);
-      console.log("ds: " + ds)
       document.getElementById('displayDate').textContent = formatDisplay(currentDate);
       document.getElementById('extraTaskDate').value = ds;
 
@@ -1096,14 +1092,12 @@
 
     // ─── ANALYSIS ─────────────────────────────────────────────────────
     function getDayScore(ds) {
-      // console.log(today)
       const comps = state.completions[ds] || {};
       const extras = state.extraTasks[ds] || [];
       const total = state.schedule.length + extras.length;
       if (total === 0) return null;
       const done = [...state.schedule, ...extras]
         .filter(t => comps[t.id] === true).length;
-      // console.log(ds, done);
       return done / total;
     }
 
